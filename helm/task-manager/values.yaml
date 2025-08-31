@@ -1,0 +1,230 @@
+# Default values for task-manager
+# This is a YAML-formatted file.
+
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+  storageClass: "standard"
+
+# Image settings
+image:
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+# API Gateway
+apiGateway:
+  replicaCount: 2
+  image:
+    repository: api-gateway
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+# User Service
+userService:
+  replicaCount: 2
+  image:
+    repository: user-service
+  service:
+    type: ClusterIP
+    port: 4000
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+# Task Service
+taskService:
+  replicaCount: 2
+  image:
+    repository: task-service
+  service:
+    type: ClusterIP
+    port: 5000
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+# Notification Service
+notificationService:
+  replicaCount: 1
+  image:
+    repository: notification-service
+  service:
+    type: ClusterIP
+    port: 6000
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "500m"
+
+# Frontend
+frontend:
+  replicaCount: 2
+  image:
+    repository: frontend
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "200m"
+
+# PostgreSQL
+postgresql:
+  enabled: true
+  auth:
+    database: taskmanager
+    username: admin
+    password: password123
+  primary:
+    persistence:
+      enabled: true
+      size: 5Gi
+      storageClass: "standard"
+    resources:
+      requests:
+        memory: "256Mi"
+        cpu: "100m"
+      limits:
+        memory: "512Mi"
+        cpu: "500m"
+
+# Redis
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: false
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+
+# Ingress
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+  hosts:
+    - host: taskmanager.local
+      paths:
+        - path: /api
+          pathType: Prefix
+          service:
+            name: api-gateway
+            port: 3000
+        - path: /
+          pathType: Prefix
+          service:
+            name: frontend
+            port: 80
+  tls: []
+
+# Autoscaling
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+# Service Monitor (for Prometheus)
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+
+# Network Policies
+networkPolicy:
+  enabled: false
+
+# Pod Security Context
+podSecurityContext:
+  fsGroup: 1001
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Security Context
+# Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: false
+  runAsNonRoot: true
+  runAsUser: 1001
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}
+
+# Environment-specific overrides
+environments:
+  development:
+    postgresql:
+      auth:
+        password: password123
+    redis:
+      auth:
+        enabled: false
+
+  staging:
+    replicaCount: 1
+    postgresql:
+      primary:
+        persistence:
+          size: 2Gi
+
+  production:
+    replicaCount: 3
+    postgresql:
+      auth:
+        existingSecret: postgres-secret
+      primary:
+        persistence:
+          size: 20Gi
+          storageClass: "fast-ssd"
+    redis:
+      auth:
+        enabled: true
+        existingSecret: redis-secret
+    autoscaling:
+      enabled: true
+    networkPolicy:
+      enabled: true
