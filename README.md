@@ -133,5 +133,3 @@ frontend/              # React + Vite + Nginx
 k8s/                   # Kubernetes manifests
 docker-compose.yml
 ```
-
-Good luck & have fun learning!
