@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  namespace: taskstack
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: auth
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+      - name: auth
+        image: taskstack/auth:local
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 4000
+        env:
+        - name: PORT
+          value: "4000"
+        - name: DATABASE_URL
+          value: postgres://$(AUTH_DB_USER):$(AUTH_DB_PASS)@auth-db:5432/authdb
+        - name: REDIS_URL
+          value: redis://redis:6379/0
+        - name: SESSION_TTL_SECONDS
+          value: "2592000"
+        - name: COOKIE_SECURE
+          value: "false"
+        - name: ORIGIN
+          value: http://taskstack.local
+        envFrom:
+        - secretRef:
+            name: taskstack-secrets
+        readinessProbe:
+          httpGet: { path: /healthz, port: 4000 }
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: { path: /healthz, port: 4000 }
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+  namespace: taskstack
+spec:
+  selector:
+    app: auth
+  ports:
+  - port: 4000
+    targetPort: 4000

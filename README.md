@@ -1,335 +1,137 @@
-# Task Manager Microservices Application
+# TaskStack — Kubernetes/Docker DevOps Learning App
 
-A complete microservices application designed for learning DevOps, Kubernetes, and containerization. This application demonstrates modern microservice architecture patterns with different programming languages and technologies.
+A production-style **microservices** sample app to learn **Kubernetes, Docker, and DevOps**.  
+Features a minimal **Task Manager** with user auth, Redis-backed sessions, email notifications, and a clean React UI.
 
-## 🏗️ Architecture
+## Services
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                        Frontend (React)                     │
-└─────────────────┬───────────────────────────────────────────┘
-                  │
-┌─────────────────▼───────────────────────────────────────────┐
-│                   API Gateway (Node.js)                     │
-└─────┬─────────────┬─────────────┬───────────────────────────┘
-      │             │             │
-┌─────▼─────┐ ┌─────▼─────┐ ┌─────▼─────┐
-│User Service│ │Task Service│ │Notification│
-│(Python)    │ │   (Go)     │ │Service(JS) │
-└─────┬─────┘ └─────┬─────┘ └─────┬─────┘
-      │             │             │
-      └─────────────┼─────────────┘
-                    │
-      ┌─────────────▼─────────────┐
-      │     PostgreSQL + Redis    │
-      └───────────────────────────┘
-```
+- **Auth Service** (Node.js + Express): registration, login, logout, session management in Redis.
+- **Task Service** (Python + FastAPI): CRUD tasks per user, Redis caching, SMTP email notifications.
+- **Frontend** (React + Vite + Nginx): simple UI talking to the backend via REST.
+- **PostgreSQL** x2: isolated DB per microservice.
+- **Redis**: session store + caching.
+- **Nginx**: serves the frontend and reverse-proxies `/api/auth` and `/api/tasks`.
 
-## 🛠️ Technologies Used
+## Quick Start (Docker Compose)
 
-- **API Gateway**: Node.js + Express + Redis (Rate limiting, caching)
-- **User Service**: Python + FastAPI + JWT Authentication
-- **Task Service**: Go + Gin Framework
-- **Notification Service**: Node.js + BullMQ + Email
-- **Frontend**: React + Axios
-- **Database**: PostgreSQL
-- **Cache/Queue**: Redis
-- **Containerization**: Docker + Docker Compose
-- **Orchestration**: Kubernetes
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Docker & Docker Compose
-- Node.js 18+ (for local development)
-- Python 3.11+ (for local development)
-- Go 1.21+ (for local development)
-- kubectl (for Kubernetes)
-- Minikube (for local Kubernetes)
-
-### Option 1: Docker Compose (Recommended for beginners)
-
-1. **Clone and navigate to the project**
-   ```bash
-   git clone <your-repo>
-   cd task-manager-microservices
-   ```
-
-2. **Build and start all services**
-   ```bash
-   make build
-   make start
-   ```
-
-3. **Access the application**
-   - Frontend: http://localhost:8080
-   - API Gateway: http://localhost:3000
-   - Individual services: 4000, 5000, 6000
-
-4. **Test the application**
-   - Register a new account
-   - Create some tasks
-   - Check notifications
-
-### Option 2: Kubernetes (Minikube)
-
-1. **Start Minikube**
-   ```bash
-   minikube start --driver=docker
-   eval $(minikube docker-env)
-   ```
-
-2. **Build images in Minikube's Docker daemon**
-   ```bash
-   make build
-   ```
-
-3. **Deploy to Kubernetes**
-   ```bash
-   make k8s-deploy
-   ```
-
-4. **Add host entry** (Linux/Mac)
-   ```bash
-   echo "$(minikube ip) taskmanager.local" | sudo tee -a /etc/hosts
-   ```
-
-5. **Access the application**
-   ```bash
-   minikube service frontend -n task-manager
-   ```
-
-## 📁 Project Structure
-
-```
-task-manager-microservices/
-├── api-gateway/              # Node.js API Gateway
-│   ├── server.js
-│   ├── package.json
-│   └── Dockerfile
-├── user-service/             # Python FastAPI User Service
-│   ├── main.py
-│   ├── requirements.txt
-│   └── Dockerfile
-├── task-service/             # Go Task Service
-│   ├── main.go
-│   ├── go.mod
-│   └── Dockerfile
-├── notification-service/     # Node.js Notification Service
-│   ├── server.js
-│   ├── package.json
-│   └── Dockerfile
-├── frontend/                 # React Frontend
-│   ├── src/App.js
-│   ├── src/App.css
-│   ├── package.json
-│   ├── Dockerfile
-│   └── nginx.conf
-├── k8s/                     # Kubernetes manifests
-│   ├── 00-namespace.yaml
-│   ├── 01-configmap.yaml
-│   ├── 02-postgres.yaml
-│   ├── 03-redis.yaml
-│   ├── 04-services.yaml
-│   └── 05-gateway-frontend.yaml
-├── docker-compose.yml       # Local development
-├── init-db.sql             # Database schema
-├── Makefile                # Build/deploy scripts
-└── README.md              # This file
-```
-
-## 🔧 Development Workflow
-
-### Local Development (Individual Services)
-
-Each service can be run independently for development:
+> Generate Build Lock Files
 
 ```bash
-# User Service (Python)
-cd user-service
-pip install -r requirements.txt
-python -m uvicorn main:app --reload --port 4000
-
-# Task Service (Go)
-cd task-service
-go mod tidy
-go run main.go
-
-# Notification Service (Node.js)
-cd notification-service
+cd auth-service
 npm install
-npm run dev
-
-# API Gateway (Node.js)
-cd api-gateway
+cd ../frontend
 npm install
-npm run dev
-
-# Frontend (React)
-cd frontend
-npm install
-npm start
 ```
 
-### Testing Individual Components
+## Quick Start (Docker Compose)
 
+> Requirements: Docker, Docker Compose
+
+1) Copy example envs and fill them:
 ```bash
-# Test User Service
-curl -X POST http://localhost:4000/api/register \
-  -H "Content-Type: application/json" \
-  -d '{"username": "test", "email": "test@example.com", "password": "password123"}'
-
-# Test API Gateway
-curl http://localhost:3000/health
-
-# Check all services
-make monitor
+cp auth-service/.env.example auth-service/.env
+cp task-service/.env.example task-service/.env
+cp frontend/.env.example frontend/.env
 ```
-
-## 🎯 Learning Objectives
-
-This project teaches:
-
-### Docker Concepts
-- Multi-stage builds
-- Health checks
-- Environment variables
-- Volume management
-- Networking between containers
-- Security best practices (non-root users)
-
-### Kubernetes Concepts
-- Deployments and ReplicaSets
-- Services (ClusterIP, NodePort, LoadBalancer)
-- ConfigMaps and Secrets
-- Persistent Volumes
-- Ingress controllers
-- Namespaces
-- Resource limits and requests
-- Health probes (liveness/readiness)
-
-### Microservices Patterns
-- Service decomposition
-- API Gateway pattern
-- Database per service
-- Asynchronous messaging
-- Circuit breaker (basic implementation)
-- Service discovery
-- Load balancing
-
-### DevOps Practices
-- Infrastructure as Code
-- Container orchestration
-- CI/CD pipeline foundations
-- Monitoring and health checks
-- Environment management
-- Security configurations
-
-## 🐳 Container Images
-
-All services are containerized with:
-- Multi-stage builds (where applicable)
-- Non-root users for security
-- Health checks
-- Proper signal handling
-- Minimal base images (Alpine Linux)
-
-## 🔍 Monitoring & Debugging
-
-### Check service health
+2) Bring everything up:
 ```bash
-# Docker Compose
-docker-compose ps
-docker-compose logs service-name
-
-# Kubernetes
-kubectl get pods -n task-manager
-kubectl logs deployment/api-gateway -n task-manager
-kubectl describe pod pod-name -n task-manager
+docker compose up --build
 ```
+3) Open **http://localhost**
 
-### Common troubleshooting
+### Useful defaults
+
+- Auth API: `http://localhost/api/auth`
+- Task API: `http://localhost/api/tasks`
+- Default cookie name: `sid` (HttpOnly)
+- Postgres data are persisted via volumes `auth-db-data` and `task-db-data`
+
+## Kubernetes (Kind or Minikube)
+
+> Requirements: kubectl, and one of: [Kind](https://kind.sigs.k8s.io) or [Minikube](https://minikube.sigs.k8s.io).  
+> Also install an **Nginx Ingress Controller** (see their docs).
+
+### 1) Build images
+From repo root, build and tag images:
 ```bash
-# Reset database
-make db-reset
-
-# Rebuild specific service
-docker-compose build service-name
-
-# Check service connectivity
-kubectl exec -it deployment/api-gateway -n task-manager -- curl http://user-service:4000/health
+# Auth
+docker build -t taskstack/auth:local ./auth-service
+# Task
+docker build -t taskstack/task:local ./task-service
+# Frontend (nginx build-stage)
+docker build -t taskstack/web:local ./frontend
 ```
 
-## 🌐 Cloud Deployment
+### 2) Load images into your cluster
+- **Kind**:
+```bash
+kind load docker-image taskstack/auth:local
+kind load docker-image taskstack/task:local
+kind load docker-image taskstack/web:local
+```
+- **Minikube**:
+```bash
+minikube image load taskstack/auth:local
+minikube image load taskstack/task:local
+minikube image load taskstack/web:local
+```
 
-### Oracle Cloud (OKE)
-1. Create OKE cluster
-2. Configure kubectl context
-3. Update image references to your container registry
-4. Deploy: `kubectl apply -f k8s/`
+### 3) Create secrets (edit placeholders first)
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl -n taskstack apply -f k8s/secrets.example.yaml
+```
+Then **edit** the secret values (or create your own secret) with your SMTP and DB passwords:
+```bash
+kubectl -n taskstack edit secret taskstack-secrets
+```
 
-### Azure (AKS)
-1. Create AKS cluster
-2. Configure kubectl context
-3. Update image references to ACR
-4. Deploy: `kubectl apply -f k8s/`
+### 4) Deploy
+```bash
+kubectl -n taskstack apply -f k8s/redis.yaml
+kubectl -n taskstack apply -f k8s/postgres-auth.yaml
+kubectl -n taskstack apply -f k8s/postgres-task.yaml
+kubectl -n taskstack apply -f k8s/auth-deployment.yaml
+kubectl -n taskstack apply -f k8s/task-deployment.yaml
+kubectl -n taskstack apply -f k8s/web-deployment.yaml
+kubectl -n taskstack apply -f k8s/ingress.yaml
+```
 
-### Google Cloud (GKE)
-1. Create GKE cluster
-2. Configure kubectl context
-3. Update image references to GCR/Artifact Registry
-4. Deploy: `kubectl apply -f k8s/`
+### 5) Browse
+Add a hosts entry if your ingress uses a host:
+```
+127.0.0.1 taskstack.local
+```
+Now open **http://taskstack.local** (or the Minikube tunnel URL).
 
-## 🔒 Security Features
+### Scale (Kubernetes)
+```bash
+kubectl -n taskstack scale deploy auth --replicas=3
+kubectl -n taskstack scale deploy task --replicas=3
+kubectl -n taskstack get pods -o wide
+```
 
-- JWT authentication
-- Password hashing (bcrypt)
-- Rate limiting
-- CORS configuration
-- Security headers (Helmet.js)
-- Non-root container users
-- Secret management with Kubernetes secrets
+---
 
-## 📈 Scaling Considerations
+## Dev Notes / Design Choices
 
-- Horizontal Pod Autoscaler ready
-- Stateless services (except database)
-- Redis for caching and session storage
-- Load balancing with multiple replicas
-- Health checks for proper traffic routing
+- **Two languages**: Node/Express for Auth and Python/FastAPI for Tasks — great to compare ergonomics and patterns.
+- **Sessions over JWT for simplicity**: `sid` stored in **Redis**, shared across services. (You can swap to JWT later.)
+- **Per-service database**: microservices **own their data**; Tasks reference `user_id` from Auth but no cross-DB foreign keys.
+- **Caching**: Task list per user cached in Redis (key `tasks:{userId}`) and invalidated on writes.
+- **Email notifications**: SMTP on create/update. If SMTP envs aren’t set, emails are skipped gracefully.
+- **Beginner-friendly**: minimal libraries, clear comments, and simple SQL; no ORM migrations required to get started.
 
-## 🚧 Production Readiness Checklist
+---
 
-- [ ] Configure proper secrets (JWT keys, database passwords)
-- [ ] Set up SSL/TLS certificates
-- [ ] Configure monitoring (Prometheus/Grafana)
-- [ ] Set up logging aggregation (ELK stack)
-- [ ] Configure backup strategies
-- [ ] Implement proper CI/CD pipelines
-- [ ] Set up alerting
-- [ ] Performance testing
-- [ ] Security scanning
+## Directory Layout
 
-## 📚 Next Steps for Learning
+```
+auth-service/          # Node/Express auth API
+task-service/          # FastAPI tasks API
+frontend/              # React + Vite + Nginx
+k8s/                   # Kubernetes manifests
+docker-compose.yml
+```
 
-1. **Add monitoring**: Implement Prometheus and Grafana
-2. **CI/CD**: Set up GitHub Actions or GitLab CI
-3. **Service Mesh**: Explore Istio for advanced networking
-4. **Message Queues**: Add RabbitMQ or Apache Kafka
-5. **Observability**: Add distributed tracing with Jaeger
-6. **Testing**: Implement integration and load tests
-7. **Security**: Add Vault for secret management
-
-## 🤝 Contributing
-
-This is a learning project! Feel free to:
-- Add new services
-- Implement additional features
-- Improve the Kubernetes manifests
-- Add monitoring and logging
-- Enhance security
-
-## 📄 License
-
-MIT License - Feel free to use this for learning and development!
+Good luck & have fun learning!

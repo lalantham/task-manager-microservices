@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: task-db
+  namespace: taskstack
+spec:
+  selector:
+    matchLabels:
+      app: task-db
+  serviceName: task-db
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: task-db
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:16-alpine
+        env:
+        - name: POSTGRES_USER
+          valueFrom: { secretKeyRef: { name: taskstack-secrets, key: TASK_DB_USER } }
+        - name: POSTGRES_PASSWORD
+          valueFrom: { secretKeyRef: { name: taskstack-secrets, key: TASK_DB_PASS } }
+        - name: POSTGRES_DB
+          value: taskdb
+        ports:
+        - containerPort: 5432
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task-db
+  namespace: taskstack
+spec:
+  clusterIP: None
+  selector:
+    app: task-db
+  ports:
+  - port: 5432
+    targetPort: 5432

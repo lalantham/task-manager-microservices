@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: task
+  namespace: taskstack
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: task
+  template:
+    metadata:
+      labels:
+        app: task
+    spec:
+      containers:
+      - name: task
+        image: taskstack/task:local
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+        env:
+        - name: PORT
+          value: "8000"
+        - name: DATABASE_URL
+          value: postgresql+psycopg://$(TASK_DB_USER):$(TASK_DB_PASS)@task-db:5432/taskdb
+        - name: REDIS_URL
+          value: redis://redis:6379/0
+        - name: ORIGIN
+          value: http://taskstack.local
+        - name: SMTP_HOST
+          valueFrom: { secretKeyRef: { name: taskstack-secrets, key: SMTP_HOST } }
+        - name: SMTP_PORT
+          valueFrom: { secretKeyRef: { name: taskstack-secrets, key: SMTP_PORT } }
+        - name: SMTP_USER
+          valueFrom: { secretKeyRef: { name: taskstack-secrets, key: SMTP_USER } }
+        - name: SMTP_PASS
+          valueFrom: { secretKeyRef: { name: taskstack-secrets, key: SMTP_PASS } }
+        - name: SMTP_FROM
+          valueFrom: { secretKeyRef: { name: taskstack-secrets, key: SMTP_FROM } }
+        envFrom:
+        - secretRef:
+            name: taskstack-secrets
+        readinessProbe:
+          httpGet: { path: /healthz, port: 8000 }
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet: { path: /healthz, port: 8000 }
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: task
+  namespace: taskstack
+spec:
+  selector:
+    app: task
+  ports:
+  - port: 8000
+    targetPort: 8000
